@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Config menyimpan parameter konfigurasi klien ZakkiStore SDK.
 type Config struct {
 	BaseURL      string
 	Token        string
@@ -18,6 +19,7 @@ type Config struct {
 	AutoWithdraw bool
 }
 
+// ZakkiStore adalah klien resmi untuk mengakses API Gateway B2B Zakki Store.
 type ZakkiStore struct {
 	baseURL        string
 	token          string
@@ -28,29 +30,27 @@ type ZakkiStore struct {
 	httpClient     *http.Client
 }
 
+// H2HParams mendefinisikan parameter untuk transaksi H2H (Host-to-Host).
 type H2HParams struct {
 	Kode   string `json:"kode"`
 	Tujuan string `json:"tujuan"`
 	RefID  string `json:"refID"`
 }
 
+// TransferParams mendefinisikan parameter untuk transfer saldo antar Virtual Account member.
 type TransferParams struct {
 	To     string `json:"to"`
 	Amount int    `json:"amount"`
 }
 
-/**
- * Inisialisasi Klien ZakkiStore baru menggunakan default base URL Gateway Resmi.
- */
+// New menginisialisasi klien ZakkiStore baru menggunakan default base URL Gateway Resmi.
 func New(token string) (*ZakkiStore, error) {
 	return NewWithConfig(Config{
 		Token: token,
 	})
 }
 
-/**
- * Inisialisasi Klien ZakkiStore baru dengan konfigurasi kustom lengkap.
- */
+// NewWithConfig menginisialisasi klien ZakkiStore baru dengan konfigurasi kustom lengkap.
 func NewWithConfig(cfg Config) (*ZakkiStore, error) {
 	if cfg.Token == "" {
 		return nil, fmt.Errorf("token wajib disertakan dalam konfigurasi SDK")
@@ -75,15 +75,12 @@ func NewWithConfig(cfg Config) (*ZakkiStore, error) {
 	}, nil
 }
 
+// EnableAutoWithdraw mengaktifkan atau menonaktifkan fitur penarikan otomatis (Auto-Withdraw).
 func (z *ZakkiStore) EnableAutoWithdraw(status bool) {
 	z.isAutoWithdraw = status
 }
 
-/**
- * Request helper internal untuk HTTP cURL / REST API request.
- * 
- * @private
- */
+// Request helper internal untuk HTTP request.
 func (z *ZakkiStore) request(endpoint string, method string, data interface{}) (map[string]interface{}, error) {
 	url := fmt.Sprintf("%s%s", z.baseURL, endpoint)
 	var reqBody []byte
@@ -152,6 +149,7 @@ func (z *ZakkiStore) request(endpoint string, method string, data interface{}) (
 // --- 1. PAYMENT GATEWAY (QRIS TOPUP) ---
 // ==========================================================
 
+// Topup membuat invoice transaksi QRIS dinamis instan dengan nominal kode unik.
 func (z *ZakkiStore) Topup(nominal int) (map[string]interface{}, error) {
 	return z.request("/topup", "POST", map[string]interface{}{
 		"token":   z.token,
@@ -159,12 +157,14 @@ func (z *ZakkiStore) Topup(nominal int) (map[string]interface{}, error) {
 	})
 }
 
+// Cektopup memeriksa status pembayaran tagihan/topup QRIS berdasarkan ID topup.
 func (z *ZakkiStore) Cektopup(idtopup string) (map[string]interface{}, error) {
 	return z.request("/cektopup", "GET", map[string]string{
 		"idtopup": idtopup,
 	})
 }
 
+// Cancel membatalkan transaksi pending (mendukung pembatalan massal atau spesifik ID).
 func (z *ZakkiStore) Cancel(idTransaksi string, allPending bool) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
 		"token": z.token,
@@ -182,6 +182,7 @@ func (z *ZakkiStore) Cancel(idTransaksi string, allPending bool) (map[string]int
 // --- 2. TRANSAKSI H2H (HOST-TO-HOST) ---
 // ==========================================================
 
+// Listkode mengambil daftar katalog kode produk H2H, deskripsi, dan harga terupdate.
 func (z *ZakkiStore) Listkode(jenis, productType string) (map[string]interface{}, error) {
 	payload := map[string]string{}
 	if jenis != "" {
@@ -193,6 +194,7 @@ func (z *ZakkiStore) Listkode(jenis, productType string) (map[string]interface{}
 	return z.request("/listkode", "GET", payload)
 }
 
+// H2H mengirimkan order transaksi pembelian produk prabayar/pascabayar H2H.
 func (z *ZakkiStore) H2H(params H2HParams) (map[string]interface{}, error) {
 	return z.request("/h2h", "POST", map[string]interface{}{
 		"token":  z.token,
@@ -202,16 +204,19 @@ func (z *ZakkiStore) H2H(params H2HParams) (map[string]interface{}, error) {
 	})
 }
 
+// H2HSimple mengirim order H2H dengan parameter posisional (kode, tujuan, refID).
 func (z *ZakkiStore) H2HSimple(kode, tujuan, refID string) (map[string]interface{}, error) {
 	return z.H2H(H2HParams{Kode: kode, Tujuan: tujuan, RefID: refID})
 }
 
+// Cekh2h memeriksa status transaksi, Serial Number (SN), dan harga beli order H2H.
 func (z *ZakkiStore) Cekh2h(idTrx string) (map[string]interface{}, error) {
 	return z.request("/cekh2h", "GET", map[string]string{
 		"id": idTrx,
 	})
 }
 
+// Myh2h mengambil 20 riwayat pembelian H2H terupdate milik akun Anda.
 func (z *ZakkiStore) Myh2h() (map[string]interface{}, error) {
 	return z.request("/myh2h", "GET", map[string]string{
 		"token": z.token,
@@ -222,6 +227,7 @@ func (z *ZakkiStore) Myh2h() (map[string]interface{}, error) {
 // --- 3. PERBANKAN & TRANSFER SALDO ---
 // ==========================================================
 
+// Checkbank memeriksa saldo VA, detail mutasi bank, dan memicu penarikan saldo otomatis (Auto-Withdraw).
 func (z *ZakkiStore) Checkbank() (map[string]interface{}, error) {
 	payload := map[string]interface{}{
 		"token": z.token,
@@ -275,12 +281,14 @@ func (z *ZakkiStore) Checkbank() (map[string]interface{}, error) {
 	return bankRes, nil
 }
 
+// Checkname memverifikasi nama pemilik nomor Virtual Account (VA) Bank Zakki tujuan.
 func (z *ZakkiStore) Checkname(number string) (map[string]interface{}, error) {
 	return z.request("/checkname", "GET", map[string]string{
 		"number": strings.TrimSpace(number),
 	})
 }
 
+// Transfer mengirimkan saldo antar rekening Virtual Account member Bank Zakki.
 func (z *ZakkiStore) Transfer(params TransferParams) (map[string]interface{}, error) {
 	return z.request("/transfer", "POST", map[string]interface{}{
 		"token":  z.token,
@@ -289,10 +297,12 @@ func (z *ZakkiStore) Transfer(params TransferParams) (map[string]interface{}, er
 	})
 }
 
+// TransferSimple mentransfer saldo dengan parameter posisional (to, amount).
 func (z *ZakkiStore) TransferSimple(to string, amount int) (map[string]interface{}, error) {
 	return z.Transfer(TransferParams{To: to, Amount: amount})
 }
 
+// Tabung menabung/menyetorkan dana dari aplikasi utama ke rekening Virtual Account Bank (butuh PIN).
 func (z *ZakkiStore) Tabung(jumlah int) (map[string]interface{}, error) {
 	if z.pin == "" {
 		return nil, fmt.Errorf("[ZakkiStore SDK Error] PIN transaksi diperlukan untuk melakukan transaksi tabung")
@@ -314,6 +324,7 @@ func (z *ZakkiStore) Tabung(jumlah int) (map[string]interface{}, error) {
 	return z.request("/tabung", "POST", payload)
 }
 
+// Tarik menarik dana tabungan Virtual Account ke saldo aplikasi utama (butuh PIN).
 func (z *ZakkiStore) Tarik(jumlah int) (map[string]interface{}, error) {
 	if z.pin == "" {
 		return nil, fmt.Errorf("[ZakkiStore SDK Error] PIN transaksi diperlukan untuk melakukan transaksi tarik")
@@ -335,6 +346,7 @@ func (z *ZakkiStore) Tarik(jumlah int) (map[string]interface{}, error) {
 	return z.request("/tarik", "POST", payload)
 }
 
+// Checkmutasi mengambil daftar riwayat mutasi Tarik/Tabung berdasarkan tipe.
 func (z *ZakkiStore) Checkmutasi(mutasiType string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
 		"token": z.token,
@@ -355,12 +367,14 @@ func (z *ZakkiStore) Checkmutasi(mutasiType string) (map[string]interface{}, err
 // --- 4. NOKTEL MARKETPLACE (OTP VIRTUAL) ---
 // ==========================================================
 
+// NoktelStok memeriksa stok nomor virtual yang ready untuk dipesan.
 func (z *ZakkiStore) NoktelStok() (map[string]interface{}, error) {
 	return z.request("/noktel/stok", "GET", map[string]string{
 		"token": z.token,
 	})
 }
 
+// NoktelBuy membeli nomor virtual baru berdasarkan kategori layanan.
 func (z *ZakkiStore) NoktelBuy(category string) (map[string]interface{}, error) {
 	return z.request("/noktel/buy", "POST", map[string]string{
 		"token":    z.token,
@@ -368,6 +382,7 @@ func (z *ZakkiStore) NoktelBuy(category string) (map[string]interface{}, error) 
 	})
 }
 
+// NoktelGetOtp menarik kode OTP Telegram secara real-time dari nomor yang dibeli.
 func (z *ZakkiStore) NoktelGetOtp(accountID string) (map[string]interface{}, error) {
 	return z.request("/noktel/getotp", "GET", map[string]string{
 		"token":      z.token,
@@ -375,6 +390,7 @@ func (z *ZakkiStore) NoktelGetOtp(accountID string) (map[string]interface{}, err
 	})
 }
 
+// NoktelCancel membatalkan nomor yang pending OTP dan melakukan auto-refund saldo.
 func (z *ZakkiStore) NoktelCancel(invoiceID string) (map[string]interface{}, error) {
 	return z.request("/noktel/cancel", "POST", map[string]string{
 		"token":      z.token,
@@ -382,6 +398,7 @@ func (z *ZakkiStore) NoktelCancel(invoiceID string) (map[string]interface{}, err
 	})
 }
 
+// NoktelHistory mengambil daftar riwayat transaksi pembelian nomor Noktel.
 func (z *ZakkiStore) NoktelHistory() (map[string]interface{}, error) {
 	return z.request("/noktel/history", "GET", map[string]string{
 		"token": z.token,
@@ -392,18 +409,21 @@ func (z *ZakkiStore) NoktelHistory() (map[string]interface{}, error) {
 // --- 5. REWARD KOMPUTASI & GAME ---
 // ==========================================================
 
+// Cekmining memeriksa status kesulitan global, block reward, dan miner aktif.
 func (z *ZakkiStore) Cekmining() (map[string]interface{}, error) {
 	return z.request("/cekmining", "GET", map[string]string{
 		"token": z.token,
 	})
 }
 
+// Mymining mengambil riwayat koin hasil mining SHA256 milik akun Anda.
 func (z *ZakkiStore) Mymining() (map[string]interface{}, error) {
 	return z.request("/mymining", "GET", map[string]string{
 		"token": z.token,
 	})
 }
 
+// Cekgacha memeriksa statistik poin, kemenangan, dan keuntungan gacha member.
 func (z *ZakkiStore) Cekgacha() (map[string]interface{}, error) {
 	return z.request("/cekgacha", "GET", map[string]string{
 		"token": z.token,
@@ -414,6 +434,7 @@ func (z *ZakkiStore) Cekgacha() (map[string]interface{}, error) {
 // --- 6. UTILITY & SECURITY ---
 // ==========================================================
 
+// Whitelistip menambahkan IP server Anda ke whitelist API H2H.
 func (z *ZakkiStore) Whitelistip(ip string) (map[string]interface{}, error) {
 	return z.request("/whitelistip", "POST", map[string]string{
 		"token": z.token,
@@ -421,6 +442,7 @@ func (z *ZakkiStore) Whitelistip(ip string) (map[string]interface{}, error) {
 	})
 }
 
+// Delwhitelistip menghapus IP server Anda dari whitelist API H2H.
 func (z *ZakkiStore) Delwhitelistip(ip string) (map[string]interface{}, error) {
 	return z.request("/delwhitelistip", "POST", map[string]string{
 		"token": z.token,
@@ -428,6 +450,7 @@ func (z *ZakkiStore) Delwhitelistip(ip string) (map[string]interface{}, error) {
 	})
 }
 
+// Leaderboard mengambil daftar peringkat sultan topup member teraktif.
 func (z *ZakkiStore) Leaderboard(limit int, period string) (map[string]interface{}, error) {
 	return z.request("/leaderboard", "GET", map[string]interface{}{
 		"limit":  limit,
@@ -435,6 +458,7 @@ func (z *ZakkiStore) Leaderboard(limit int, period string) (map[string]interface
 	})
 }
 
+// Status memeriksa metrik CPU, beban finansial, dan kesehatan sistem global.
 func (z *ZakkiStore) Status() (map[string]interface{}, error) {
 	return z.request("/status", "GET", nil)
 }
