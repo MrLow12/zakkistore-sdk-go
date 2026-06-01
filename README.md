@@ -63,7 +63,7 @@ zakki, err := zakkistore.NewWithConfig(zakkistore.Config{
 ## 🛠️ Fitur Unggulan
 
 ### 🔄 Auto-Withdraw Saldo VA
-Jika opsi `AutoWithdraw: true` diaktifkan, SDK akan memicu penarikan dana VA bank otomatis secara *real-time* menjadi saldo utama aplikasi (Zakki Store) ketika fungsi `zakki.Checkbank()` dipanggil.
+Jika opsi `AutoWithdraw: true` diaktifkan, SDK akan memicu penarikan dana VA bank otomatis secara *real-time* menjadi saldo utama aplikasi zakki store ketika fungsi `zakki.Checkbank()` dipanggil.
 
 ### 💡 Dual-Flow Pascabayar & Bebas Nominal
 *   **Pascabayar (PLN/BPJS/PDAM):** Inquiry tagihan terlebih dahulu, lalu bayar dengan format tujuan `[ID_Pelanggan].[Nominal_Tagihan]` (Contoh: `122345678901.150000`).
@@ -92,7 +92,7 @@ SDK Go ini mendukung secara penuh seluruh **25 fungsi resmi** dengan nama dan pe
 *   `zakki.Checkname(number string)` — Verifikasi nama asli pemilik VA Bank Zakki tujuan.
 *   `zakki.Transfer(params zakkistore.TransferParams)` — Transfer saldo antar Virtual Account member Bank Zakki.
 *   `zakki.TransferSimple(to string, amount int)` — Versi sederhana posisional untuk transfer saldo.
-*   `zakki.Tabung(jumlah int)` — Menabung / deposit saldo dari aplikasi utama (Zakki Store) ke Bank (butuh PIN).
+*   `zakki.Tabung(jumlah int)` — Menabung / deposit saldo dari aplikasi zakki store ke Bank (butuh PIN).
 *   `zakki.Tarik(jumlah int)` — Menarik dana tabungan ke saldo aplikasi (butuh PIN).
 *   `zakki.Checkmutasi(mutasiType string)` — Riwayat mutasi Tarik/Tabung (`tarik`, `tabung`, `all`).
 

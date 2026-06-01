@@ -409,10 +409,13 @@ func (z *ZakkiStore) NoktelHistory() (map[string]interface{}, error) {
 // --- 5. REWARD KOMPUTASI & GAME ---
 // ==========================================================
 
-// Cekmining memeriksa status kesulitan global, block reward, dan miner aktif.
-func (z *ZakkiStore) Cekmining() (map[string]interface{}, error) {
+// Cekmining memeriksa detail status transaksi mining koin spesifik berdasarkan ID.
+func (z *ZakkiStore) Cekmining(idmining string) (map[string]interface{}, error) {
+	if idmining == "" {
+		return nil, fmt.Errorf("parameter idmining wajib diisi")
+	}
 	return z.request("/cekmining", "GET", map[string]string{
-		"token": z.token,
+		"idmining": strings.TrimSpace(idmining),
 	})
 }
 
@@ -420,6 +423,28 @@ func (z *ZakkiStore) Cekmining() (map[string]interface{}, error) {
 func (z *ZakkiStore) Mymining() (map[string]interface{}, error) {
 	return z.request("/mymining", "GET", map[string]string{
 		"token": z.token,
+	})
+}
+
+// MiningStart meminta tantangan (challenge) mining baru dari server.
+func (z *ZakkiStore) MiningStart() (map[string]interface{}, error) {
+	return z.request("/mining/start", "GET", map[string]string{
+		"token": z.token,
+	})
+}
+
+// MiningSubmit mengirimkan nonce tebakan dan signature untuk divalidasi oleh server.
+func (z *ZakkiStore) MiningSubmit(nonce interface{}, signature string) (map[string]interface{}, error) {
+	if nonce == nil {
+		return nil, fmt.Errorf("parameter nonce wajib disertakan")
+	}
+	if signature == "" {
+		return nil, fmt.Errorf("parameter signature wajib disertakan")
+	}
+	return z.request("/mining/submit", "POST", map[string]interface{}{
+		"token":     z.token,
+		"nonce":     nonce,
+		"signature": signature,
 	})
 }
 
@@ -461,4 +486,72 @@ func (z *ZakkiStore) Leaderboard(limit int, period string) (map[string]interface
 // Status memeriksa metrik CPU, beban finansial, dan kesehatan sistem global.
 func (z *ZakkiStore) Status() (map[string]interface{}, error) {
 	return z.request("/status", "GET", nil)
+}
+
+// ==========================================================
+// --- 7. METODE INTEGRASI BARU ---
+// ==========================================================
+
+// Setcallback mendaftarkan URL callback HTTPS Anda untuk menerima notifikasi otomatis.
+func (z *ZakkiStore) Setcallback(site string) (map[string]interface{}, error) {
+	return z.request("/setcallback", "GET", map[string]string{
+		"token": z.token,
+		"site":  strings.TrimSpace(site),
+	})
+}
+
+// Delcallback menghapus URL callback yang terdaftar.
+func (z *ZakkiStore) Delcallback() (map[string]interface{}, error) {
+	return z.request("/delcallback", "GET", map[string]string{
+		"token": z.token,
+	})
+}
+
+// Setnotifbot mendaftarkan ID Telegram Anda untuk notifikasi laporan transaksi bot.
+func (z *ZakkiStore) Setnotifbot(telegramID string) (map[string]interface{}, error) {
+	return z.request("/setnotifbot", "GET", map[string]string{
+		"token": z.token,
+		"id":    strings.TrimSpace(telegramID),
+	})
+}
+
+// Delnotifbot menghapus ID Telegram yang terdaftar untuk menonaktifkan notifikasi bot.
+func (z *ZakkiStore) Delnotifbot() (map[string]interface{}, error) {
+	return z.request("/delnotifbot", "GET", map[string]string{
+		"token": z.token,
+	})
+}
+
+// Checktransfer memverifikasi status transfer saldo antar member berdasarkan ID transfer.
+func (z *ZakkiStore) Checktransfer(idtransfer string) (map[string]interface{}, error) {
+	return z.request("/checktransfer", "GET", map[string]string{
+		"idtransfer": strings.TrimSpace(idtransfer),
+	})
+}
+
+// Mytransfer mengambil daftar riwayat transfer saldo masuk/keluar.
+func (z *ZakkiStore) Mytransfer(transferType string) (map[string]interface{}, error) {
+	return z.request("/mytransfer", "GET", map[string]string{
+		"token": z.token,
+		"type":  strings.TrimSpace(transferType),
+	})
+}
+
+// Mytopup mengambil daftar riwayat topup sukses beserta total volume topup.
+func (z *ZakkiStore) Mytopup() (map[string]interface{}, error) {
+	return z.request("/mytopup", "GET", map[string]string{
+		"token": z.token,
+	})
+}
+
+// Cekmyip mengecek alamat IP publik server Anda yang terdeteksi oleh gateway.
+func (z *ZakkiStore) Cekmyip() (map[string]interface{}, error) {
+	return z.request("/cekmyip", "GET", nil)
+}
+
+// Cekip memverifikasi status keamanan IP tertentu (Aman/Whitelist/Blacklist).
+func (z *ZakkiStore) Cekip(ip string) (map[string]interface{}, error) {
+	return z.request("/cekip", "GET", map[string]string{
+		"ip": strings.TrimSpace(ip),
+	})
 }
