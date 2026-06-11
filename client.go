@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -162,6 +163,11 @@ func (z *ZakkiStore) Cektopup(idtopup string) (map[string]interface{}, error) {
 	return z.request("/cektopup", "GET", map[string]string{
 		"idtopup": idtopup,
 	})
+}
+
+// Cektopup2 mendapatkan URL gambar struk digital dinamis (hologram receipt) berformat PNG.
+func (z *ZakkiStore) Cektopup2(idtopup string) string {
+	return fmt.Sprintf("%s/cektopup2?idtopup=%s", strings.TrimSuffix(z.baseURL, "/"), url.QueryEscape(idtopup))
 }
 
 // Cancel membatalkan transaksi pending (mendukung pembatalan massal atau spesifik ID).
